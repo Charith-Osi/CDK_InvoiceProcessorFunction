@@ -19,6 +19,6 @@ It is designed to:
 ├── requirements.txt            # Python dependencies
 ├── client/                     # Orchestration client (Service Bus trigger)
 ├── orchestrator/               # Durable orchestrator function
-├── Consolidation1a/            # Rule 1: Parent/Child Rollup
-├── Consolidation1b/            # Rule 2: Monthly Compression
-├── test-payload.json           # Sample invoice JSON input
+├── r01_Consolidation1a/            # Rule 1: Activity function
+├── r02_Consolidation1b/            # Rule 2: Activity function
+├── test-payload.json           # Sample invoice JSON input - test payload
