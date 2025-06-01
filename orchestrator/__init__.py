@@ -1,21 +1,15 @@
-import re, os
-from pathlib import Path
 import azure.durable_functions as df
-
-RULE_DIR = re.compile(r"^r\d+_")
+import logging
 
 def orchestrator_function(ctx: df.DurableOrchestrationContext):
-    data  = ctx.get_input() or {}
-    base  = Path(__file__).parent.parent      # project root
+    data = ctx.get_input() or {}
 
-    rule_dirs = sorted(
-        d for d in base.iterdir()
-        if d.is_dir() and RULE_DIR.match(d.name)
-    )
+    logging.info("Calling activity: Consolidation1a")
+    step1a = yield ctx.call_activity("Consolidation1a", data)
 
-    for rd in rule_dirs:
-        data = yield ctx.call_activity(rd.name, data)
+    logging.info("Calling activity: Consolidation1b")
+    step1b = yield ctx.call_activity("Consolidation1b", step1a)
 
-    return data
+    return step1b
 
 main = df.Orchestrator.create(orchestrator_function)
