@@ -10,6 +10,9 @@ def orchestrator_function(ctx: df.DurableOrchestrationContext):
     logging.info("Calling activity: Consolidation1b")
     step1b = yield ctx.call_activity("Consolidation1b", step1a)
 
-    return step1b
+    logging.info("Calling activity: SaveToDb")
+    save_result = yield ctx.call_activity("SaveToDb", step1b)
+
+    return save_result
 
 main = df.Orchestrator.create(orchestrator_function)
