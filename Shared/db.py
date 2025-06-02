@@ -1,30 +1,17 @@
 # shared/db.py
 
 import os
-import pymysql
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-def get_connection():
-    """
-    Returns a pymysql.Connection object using environment variables.
-    Environment variables (in local.settings.json):
-      - MYSQL_HOST
-      - MYSQL_PORT
-      - MYSQL_USER
-      - MYSQL_PASSWORD
-      - MYSQL_DATABASE
-    """
-    host     = os.getenv("MYSQL_HOST", "localhost")
-    port     = int(os.getenv("MYSQL_PORT", 3306))
-    user     = os.getenv("MYSQL_USER", "root")
-    password = os.getenv("MYSQL_PASSWORD", "root")
-    database = os.getenv("MYSQL_DATABASE", "InvoiceDB")
+user = os.getenv("MYSQL_USER", "root")
+pwd  = os.getenv("MYSQL_PASSWORD", "")
+host = os.getenv("MYSQL_HOST", "localhost")
+port = os.getenv("MYSQL_PORT", "3306")
+db   = os.getenv("MYSQL_DATABASE", "InvoiceDB")
 
-    return pymysql.connect(
-        host=host,
-        port=port,
-        user=user,
-        password=password,
-        database=database,
-        cursorclass=pymysql.cursors.DictCursor,
-        autocommit=False
-    )
+DATABASE_URL = f"mysql+pymysql://{user}:{pwd}@{host}:{port}/{db}"
+
+engine = create_engine(DATABASE_URL, future=True)
+
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)

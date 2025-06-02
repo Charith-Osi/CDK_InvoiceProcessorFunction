@@ -2,126 +2,86 @@
 
 import logging
 from typing import List
-from .db import get_connection
-from .models import InvoiceHeader, InvoiceDetail
+from .db import SessionLocal
+from .models import InvoiceHeaderORM, InvoiceDetailORM
 
 class InvoiceRepository:
-    """Encapsulates all DB operations for InvoiceHeader and InvoiceDetail."""
-
     def __init__(self):
-        self.conn = get_connection()
+        self.db = SessionLocal()
 
-    def upsert_header(self, header: InvoiceHeader):
+    def insert_header(self, header_data: dict):
         """
-        Insert or replace the InvoiceHeader row.
-        Uses REPLACE INTO so that if the Id already exists, it overwrites.
+        Insert a new header. If you want to skip duplicates, catch the integrity error.
         """
-        sql = """
-        REPLACE INTO InvoiceHeader (
-          Id, Name, FIN_Invoice_Date, Total_Amount,
-          FIN_Due_Date, Dispute_Comments, CID_Cancelled,
-          blng_InvoiceBatches, Bill_To_Account_SF_Id,
-          Bill_To_AccountNumber, Bill_To_AccountName,
-          BillingCity, BillingState, BillingPostalCode,
-          BillingStreet, Email_List, FIN_Language,
-          FIN_Invoice_Delivery
-        ) VALUES (
-          %s, %s, %s, %s,
-          %s, %s, %s,
-          %s, %s, %s,
-          %s, %s, %s, %s,
-          %s, %s, %s, %s
+        header_id = header_data["Id"]
+        existing = (
+            self.db.query(InvoiceHeaderORM)
+                   .filter(InvoiceHeaderORM.Id == header_id)
+                   .one_or_none()
         )
-        """
-        params = (
-            header.Id,
-            header.Name,
-            header.FIN_Invoice_Date__c,
-            header.Total_Amount__c,
-            header.FIN_Due_Date__c,
-            header.Dispute_Comments__c,
-            header.CID_Cancelled__c,
-            header.blng__InvoiceBatches__c,
-            header.Bill_To_Account_SF_Id,
-            header.Bill_To_AccountNumber,
-            header.Bill_To_AccountName,
-            header.BillingCity,
-            header.BillingState,
-            header.BillingPostalCode,
-            header.BillingStreet,
-            header.Email_List,
-            header.FIN_Langauge__c,
-            header.FIN_Invoice_Delivery_Method__c
+        if existing:
+            return
+        
+        header = InvoiceHeaderORM(
+            Id                      = header_data["Id"],
+            Name                    = header_data.get("Name"),
+            FIN_Invoice_Date__c     = header_data.get("FIN_Invoice_Date__c"),
+            Total_Amount__c         = header_data.get("Total_Amount__c"),
+            FIN_Due_Date__c         = header_data.get("FIN_Due_Date__c"),
+            Dispute_Comments__c     = header_data.get("Dispute_Comments__c"),
+            CID_Cancelled__c        = header_data.get("CID_Cancelled__c"),
+            blng__InvoiceBatches__c = header_data.get("blng__InvoiceBatches__c"),
+            Bill_To_Account_SF_Id   = header_data.get("Bill_To_Account_SF_Id"),
+            Bill_To_AccountNumber   = header_data.get("Bill_To_AccountNumber"),
+            Bill_To_AccountName     = header_data.get("Bill_To_AccountName"),
+            BillingCity             = header_data.get("BillingCity"),
+            BillingState            = header_data.get("BillingState"),
+            BillingPostalCode       = header_data.get("BillingPostalCode"),
+            BillingStreet           = header_data.get("BillingStreet"),
+            Email_List              = header_data.get("Email_List"),
+            FIN_Langauge__c         = header_data.get("FIN_Langauge__c"),
+            FIN_Invoice_Delivery_Method__c = header_data.get("FIN_Invoice_Delivery_Method__c")
         )
+        self.db.add(header)
+        logging.info("Queued INSERT for InvoiceHeader Id=%s", header.Id)
 
-        with self.conn.cursor() as cursor:
-            cursor.execute(sql, params)
-        logging.info("Upserted InvoiceHeader Id=%s", header.Id)
-
-    def delete_details_for_header(self, header_id: str):
-        """Delete any existing details for that InvoiceHeader."""
-        sql = "DELETE FROM InvoiceDetail WHERE Header_Id = %s"
-        with self.conn.cursor() as cursor:
-            cursor.execute(sql, (header_id,))
-        logging.info("Deleted existing InvoiceDetail for Header_Id=%s", header_id)
-
-    def insert_details(self, header_id: str, details: List[InvoiceDetail]):
-        """
-        Insert each InvoiceDetail row. All numeric strings are cast to float.
-        """
-        sql = """
-        INSERT INTO InvoiceDetail (
-          Header_Id,
-          Invoice_SF_Id, Invoice_Number, Invoice_Date,
-          Invoice_Line_SF_Id, FIN_Invoice_Ship_to,
-          Ship_To_AccountNumber, Ship_To_AccountName,
-          blng_BillingFrequency, Order_Product_SF_ID,
-          Contract_Line, External_Order_Item_ID,
-          blng_RequiredBy, blng_Notes, Product_SF_ID,
-          ProductCode, Description, blng_ChargeType,
-          blng_Quantity, blng_Subtotal, blng_TaxAmount,
-          blng_TotalAmount
-        ) VALUES (
-          %s, %s, %s, %s,
-          %s, %s, %s, %s,
-          %s, %s, %s, %s,
-          %s, %s, %s, %s,
-          %s, %s, %s, %s,
-          %s, %s
-        )
-        """
-
-        with self.conn.cursor() as cursor:
-            for line in details:
-                params = (
-                    header_id,
-                    line.Invoice_SF_Id,
-                    line.Invoice_Number,
-                    line.Invoice_Date,
-                    line.Invoice_Line_SF_Id,
-                    line.FIN_Invoice_Ship_to_Account__c,
-                    line.Ship_To_AccountNumber,
-                    line.Ship_To_AccountName,
-                    line.blng__BillingFrequency__c,
-                    line.Order_Product_SF_ID,
-                    line.Contract_Line__c,
-                    line.External_Order_Item_ID__c,
-                    line.blng__RequiredBy__c,
-                    line.blng__Notes__c,
-                    line.Product_SF_ID,
-                    line.ProductCode,
-                    line.Description,
-                    line.blng__ChargeType__c,
-                    float(line.blng__Quantity__c or 0),
-                    float(line.blng__Subtotal__c or 0),
-                    float(line.blng__TaxAmount__c or 0),
-                    float(line.blng__TotalAmount__c or 0),
-                )
-                cursor.execute(sql, params)
-        logging.info("Inserted %d InvoiceDetail lines for Header_Id=%s", len(details), header_id)
+    def insert_details(self, header_id: str, details: List[dict]):
+        for d in details:
+            detail = InvoiceDetailORM(
+                Header_Id               = header_id,
+                Invoice_SF_Id           = d.get("Invoice_SF_Id"),
+                Invoice_Number          = d.get("Invoice_Number"),
+                Invoice_Date            = d.get("Invoice_Date"),
+                Invoice_Line_SF_Id      = d.get("Invoice_Line_SF_Id"),
+                FIN_Invoice_Ship_to_Account__c = d.get("FIN_Invoice_Ship_to_Account__c"),
+                Ship_To_AccountNumber   = d.get("Ship_To_AccountNumber"),
+                Ship_To_AccountName     = d.get("Ship_To_AccountName"),
+                blng__BillingFrequency__c = d.get("blng__BillingFrequency__c"),
+                Order_Product_SF_ID     = d.get("Order_Product_SF_ID"),
+                Contract_Line__c        = d.get("Contract_Line__c"),
+                External_Order_Item_ID__c = d.get("External_Order_Item_ID__c"),
+                blng__RequiredBy__c     = d.get("blng__RequiredBy__c"),
+                blng__Notes__c          = d.get("blng__Notes__c"),
+                Product_SF_ID           = d.get("Product_SF_ID"),
+                ProductCode             = d.get("ProductCode"),
+                Description             = d.get("Description"),
+                blng__ChargeType__c     = d.get("blng__ChargeType__c"),
+                blng__Quantity__c       = float(d.get("blng__Quantity__c") or 0),
+                blng__Subtotal__c       = float(d.get("blng__Subtotal__c") or 0),
+                blng__TaxAmount__c      = float(d.get("blng__TaxAmount__c") or 0),
+                blng__TotalAmount__c    = float(d.get("blng__TotalAmount__c") or 0)
+            )
+            self.db.add(detail)
+        logging.info("Queued INSERT of %d InvoiceDetail lines for Header_Id=%s", len(details), header_id)
 
     def commit_and_close(self):
-        """Commit the transaction and close the connection."""
-        self.conn.commit()
-        self.conn.close()
-        logging.info("DB connection committed and closed.")
+        try:
+            self.db.commit()
+            logging.info("Committed transaction.")
+        except Exception as e:
+            self.db.rollback()
+            logging.exception("Rollback after error: %s", e)
+            raise
+        finally:
+            self.db.close()
+            logging.info("Session closed.")
