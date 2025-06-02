@@ -43,7 +43,7 @@ class InvoiceDetailORM(Base):
     Invoice_Number             = Column(String(32))
     Invoice_Date               = Column(Date)
     Invoice_Line_SF_Id         = Column(String(32))
-    FIN_Invoice_Ship_to_Account__c = Column("FIN_Invoice_Ship_to", String(32))
+    FIN_Invoice_Ship_to_Account__c = Column(String(255), nullable=True)
     Ship_To_AccountNumber      = Column(String(32))
     Ship_To_AccountName        = Column(String(64))
     blng__BillingFrequency__c  = Column("blng_BillingFrequency", String(16))
