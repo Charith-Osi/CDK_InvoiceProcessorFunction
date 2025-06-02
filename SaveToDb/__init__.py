@@ -12,9 +12,9 @@ def main(payload: dict):
     repo = InvoiceRepository()
 
     try:
-        repo.upsert_header(invoice_payload.Consolidated_Invoice)
+        # repo.upsert_header(invoice_payload.Consolidated_Invoice)
 
-        repo.delete_details_for_header(invoice_payload.Consolidated_Invoice.Id)
+        # repo.delete_details_for_header(invoice_payload.Consolidated_Invoice.Id)
 
         repo.insert_details(
             invoice_payload.Consolidated_Invoice.Id,
