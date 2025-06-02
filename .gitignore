@@ -49,3 +49,5 @@ __azurite_db*__.json
 
 azurite/debug.log
 azurite/debug.log
+
+log.txt
