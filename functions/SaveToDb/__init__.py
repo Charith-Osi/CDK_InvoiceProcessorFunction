@@ -1,8 +1,8 @@
 # SaveToDb/__init__.py
 
 import logging
-from Shared.repository import SessionLocal
-from Shared.models    import InvoiceHeaderORM, InvoiceDetailORM
+from db_utils.repository import SessionLocal
+from db_utils.models    import InvoiceHeaderORM, InvoiceDetailORM
 
 def main(payload: dict) -> None:
     """

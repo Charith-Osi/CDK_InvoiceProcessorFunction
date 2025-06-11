@@ -52,4 +52,6 @@ azurite/debug.log
 
 log.txt
 
+# Visual Studio Code settings
 .vscode/
+azurite/

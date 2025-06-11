@@ -1,6 +1,6 @@
 import logging
 import json
-from Shared.db import engine
+from db_utils.db import engine
 from sqlalchemy import text
 
 def main(payload: str) -> dict:

@@ -2,8 +2,8 @@
 
 import logging
 import json
-from Shared.repository import SessionLocal
-from Shared.db         import engine
+from db_utils.repository import SessionLocal
+from db_utils.db         import engine
 from sqlalchemy import text
 
 def main(payload: dict) -> str:
